@@ -483,15 +483,20 @@ let state = {
 // ═══════════════════════════════════════════════
 
 function goTo(screenId) {
+  // Cacher tous les écrans immédiatement
   document.querySelectorAll('.screen').forEach(s => {
+    s.style.display = 'none';
     s.classList.remove('visible');
-    setTimeout(() => { s.style.display = 'none'; }, 400);
   });
-  setTimeout(() => {
-    const next = document.getElementById('screen-' + screenId);
-    next.style.display = 'flex';
-    requestAnimationFrame(() => next.classList.add('visible'));
-  }, 150);
+  // Afficher le bon écran
+  const next = document.getElementById('screen-' + screenId);
+  next.style.display = 'flex';
+  // Déclencher l'animation au prochain frame
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      next.classList.add('visible');
+    });
+  });
 }
 
 // ═══════════════════════════════════════════════
