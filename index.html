@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bev-ops · Audit de cadrage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ivory:      #F7F3EE;
+      --ivory-dark: #EDE7DC;
+      --black:      #1A1A18;
+      --black-soft: #2E2E2A;
+      --copper:     #C4956A;
+      --copper-dim: #C4956A20;
+      --gray:       #8A8680;
+      --gray-light: #C8C4BF;
+      --dark-bg:    #1A1A18;
+      --dark-card:  #242420;
+      --dark-border:#3A3A36;
+    }
+
+    html, body { height: 100%; font-size: 16px; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--ivory);
+      color: var(--black);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 3rem 2rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .screen.visible { opacity: 1; transform: translateY(0); }
+    .screen.dark { background: var(--dark-bg); }
+    .screen--center { justify-content: center; align-items: center; text-align: center; }
+
+    .inner {
+      max-width: 620px;
+      width: 100%;
+      margin: 0 auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TYPOGRAPHIE ── */
+    .label {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      color: var(--copper);
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .display {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      line-height: 1.25;
+      color: var(--black);
+    }
+
+    .display--lg { font-size: clamp(2.2rem, 5vw, 3.2rem); }
+    .display--md { font-size: clamp(1.8rem, 4vw, 2.5rem); }
+    .display--q  { font-size: clamp(1.4rem, 3.5vw, 2rem); line-height: 1.4; }
+
+    .display em { font-style: italic; color: var(--copper); }
+    .display.light { color: var(--ivory); }
+
+    .body-text {
+      font-size: 0.95rem;
+      color: var(--gray);
+      line-height: 1.8;
+      font-weight: 300;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 40px; height: 1px;
+      background: var(--copper);
+      margin-bottom: 2.5rem;
+    }
+    .divider--center { margin-left: auto; margin-right: auto; }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap { width: 100%; margin-bottom: 2.5rem; }
+    .progress-labels {
+      display: flex; justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+    .progress-labels span { font-size: 0.7rem; color: var(--gray); }
+    .progress-track {
+      height: 1px; background: var(--gray-light); position: relative;
+    }
+    .progress-fill {
+      position: absolute; top: 0; left: 0; height: 1px;
+      background: var(--copper);
+      transition: width 0.5s ease;
+    }
+
+    /* ── OPTIONS ── */
+    .option {
+      display: flex; align-items: center; gap: 0.875rem;
+      width: 100%; padding: 0.875rem 1.25rem;
+      background: transparent;
+      border: 1px solid var(--gray-light);
+      border-radius: 2px; cursor: pointer;
+      text-align: left; margin-bottom: 0.625rem;
+      transition: border-color 0.2s, background 0.2s;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; color: var(--black-soft);
+      font-weight: 300;
+    }
+    .option:hover { border-color: var(--copper); }
+    .option.selected {
+      border-color: var(--copper);
+      background: var(--copper-dim);
+      color: var(--black);
+      font-weight: 500;
+    }
+
+    .option-dot {
+      width: 18px; height: 18px; flex-shrink: 0;
+      border: 1px solid var(--gray-light);
+      border-radius: 50%;
+      background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .option-dot.square { border-radius: 2px; }
+    .option.selected .option-dot {
+      background: var(--copper);
+      border-color: var(--copper);
+    }
+    .option-dot svg { display: none; }
+    .option.selected .option-dot svg { display: block; }
+
+    .multi-hint {
+      font-size: 0.75rem; color: var(--gray);
+      margin-bottom: 1rem;
+    }
+
+    /* ── INPUTS ── */
+    .text-input, .textarea-input {
+      width: 100%; padding: 1rem 1.25rem;
+      background: transparent;
+      border: 1px solid var(--gray-light);
+      border-radius: 2px; outline: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem; color: var(--black);
+      font-weight: 300; line-height: 1.7;
+      transition: border-color 0.2s;
+    }
+    .textarea-input { resize: vertical; min-height: 130px; }
+    .text-input:focus, .textarea-input:focus { border-color: var(--copper); }
+    .text-input::placeholder, .textarea-input::placeholder { color: var(--gray-light); }
+
+    /* ── BOUTONS ── */
+    .btn {
+      padding: 0.875rem 2.5rem;
+      background: var(--black); color: var(--ivory);
+      border: none; border-radius: 2px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem; letter-spacing: 0.1em;
+      text-transform: uppercase; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover:not(:disabled) { background: var(--copper); }
+    .btn:disabled { background: var(--gray-light); cursor: default; }
+    .btn--start { padding: 1rem 3rem; }
+
+    /* ── NAV ── */
+    .nav {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 3rem;
+    }
+    .back-btn {
+      background: none; border: none; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
+      color: var(--gray); transition: opacity 0.2s;
+    }
+    .back-btn:disabled { opacity: 0; cursor: default; }
+
+    /* ── WELCOME STATS ── */
+    .stats {
+      display: flex; justify-content: center; gap: 2.5rem;
+      margin-bottom: 3rem;
+    }
+    .stats span {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.95rem; color: var(--black-soft);
+    }
+
+    /* ── SYNTHESIS ── */
+    .synth-card {
+      background: var(--dark-card);
+      border: 1px solid var(--dark-border);
+      border-radius: 4px; padding: 2.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .synth-text {
+      font-size: 0.9rem; color: #C8C4BF;
+      line-height: 1.9; font-weight: 300;
+    }
+    .synth-text strong { color: var(--copper); font-weight: 500; }
+    .synth-text p { margin-bottom: 1rem; }
+    .synth-text p:last-child { margin-bottom: 0; }
+
+    .spinner {
+      width: 32px; height: 32px;
+      border: 2px solid var(--dark-border);
+      border-top-color: var(--copper);
+      border-radius: 50%;
+      margin: 0 auto 1.5rem;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .spinner-text {
+      font-size: 0.85rem; color: var(--gray);
+      font-weight: 300; text-align: center;
+    }
+
+    .status-dot {
+      display: flex; align-items: center; gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+    }
+    .dot--green  { background: #6BCB8B; }
+    .dot--red    { background: #E07070; }
+    .dot--copper { background: var(--copper); }
+    .status-dot span { font-size: 0.75rem; color: var(--gray); }
+
+    .signature {
+      border-top: 1px solid var(--dark-border);
+      padding-top: 2rem; text-align: center;
+      margin-top: 1rem;
+    }
+    .signature p { margin-bottom: 0.5rem; }
+
+    /* ── FOOTER ── */
+    .footer {
+      position: fixed; bottom: 2rem; left: 0; right: 0;
+      text-align: center;
+      font-size: 0.7rem; color: var(--gray-light);
+      pointer-events: none;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .screen { padding: 2rem 1.25rem; }
+      .stats { gap: 1.5rem; }
+      .btn--start { padding: 0.875rem 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     ÉCRAN 1 — WELCOME
+════════════════════════════════════════════════ -->
+<div id="screen-welcome" class="screen screen--center visible">
+  <div style="max-width:520px;width:100%">
+    <div class="divider divider--center"></div>
+    <p class="label" style="margin-bottom:1.25rem">bev-ops · audit de cadrage</p>
+    <h1 class="display display--lg" style="margin-bottom:1.75rem">
+      Préparons votre<br>
+      <em>rendez-vous ensemble.</em>
+    </h1>
+    <p class="body-text" style="margin-bottom:3rem">
+      Ce questionnaire me permet de comprendre votre situation avant notre échange.
+      Il est court, ciblé, et pensé pour vous faire gagner du temps — pas en perdre.
+    </p>
+    <div class="stats">
+      <span>10 min</span>
+      <span>Confidentiel</span>
+      <span>Sans engagement</span>
+    </div>
+    <button class="btn btn--start" onclick="goTo('qualify')">Commencer</button>
+  </div>
+  <div class="footer">bev-ops.fr</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ÉCRAN 2 — QUALIFICATION
+════════════════════════════════════════════════ -->
+<div id="screen-qualify" class="screen" style="display:none">
+  <div class="inner">
+    <div class="nav">
+      <span class="label">bev-ops</span>
+      <button class="back-btn" disabled>← Précédent</button>
+    </div>
+    <div style="flex:1">
+      <p style="font-size:0.75rem;color:var(--gray);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem">Pour commencer</p>
+      <p class="display display--q" style="margin-bottom:2.5rem">
+        En ce moment, ce qui vous préoccupe le plus est…
+      </p>
+      <div id="qualify-options"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:3rem">
+      <button class="btn" id="qualify-next" disabled onclick="startQuestionnaire()">Continuer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ÉCRAN 3 — QUESTION
+════════════════════════════════════════════════ -->
+<div id="screen-question" class="screen" style="display:none">
+  <div class="inner">
+    <div class="nav">
+      <span class="label">bev-ops</span>
+      <button class="back-btn" id="back-btn" onclick="goPrev()">← Précédent</button>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-labels">
+        <span class="label">Progression</span>
+        <span id="progress-count"></span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+    <div style="flex:1">
+      <p class="display display--q" id="question-text" style="margin-bottom:2.5rem"></p>
+      <div id="question-body"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:3rem">
+      <button class="btn" id="next-btn" disabled onclick="goNext()">Continuer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ÉCRAN 4 — SYNTHÈSE
+════════════════════════════════════════════════ -->
+<div id="screen-synthesis" class="screen dark" style="display:none">
+  <div class="inner" style="justify-content:center">
+    <div style="text-align:center;margin-bottom:3rem">
+      <div class="divider divider--center"></div>
+      <p class="label" style="margin-bottom:1rem">bev-ops · synthèse</p>
+      <h2 class="display display--md light">Merci pour vos réponses.</h2>
+    </div>
+
+    <div class="synth-card">
+      <div id="synth-loading">
+        <div class="spinner"></div>
+        <p class="spinner-text">Analyse de votre situation en cours…</p>
+      </div>
+      <div id="synth-content" class="synth-text" style="display:none"></div>
+    </div>
+
+    <div id="webhook-status"></div>
+
+    <div class="signature">
+      <p class="display" style="font-size:1.1rem;color:var(--ivory);font-style:italic">
+        À très bientôt lors de notre rendez-vous.
+      </p>
+      <p style="font-size:0.75rem;color:var(--gray);letter-spacing:0.1em">— Bev · bev-ops.fr</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+
+const PROFILE_LABELS = {
+  A: "Clarification & Priorités",
+  B: "Offre & Acquisition",
+  C: "Produit / Application",
+  D: "Automatisation & OS",
+  E: "Cadrage opérationnel",
+  F: "Audit complet premium",
+};
+
+const QUALIFY_OPTIONS = [
+  { label: "Je manque de clarté sur mes priorités", profile: "A" },
+  { label: "Je n'attire pas assez de clients", profile: "B" },
+  { label: "Je veux construire un produit ou une application", profile: "C" },
+  { label: "Je perds trop de temps sur des tâches répétitives", profile: "D" },
+  { label: "Je sais ce que je veux, j'ai besoin d'aide à l'exécution", profile: "E" },
+  { label: "J'ai besoin d'une vision globale sur tout", profile: "F" },
+];
+
+const QUESTIONNAIRES = {
+  A: [
+    { id: "a1", text: "Quelle est votre activité aujourd'hui ?", type: "long" },
+    { id: "a2", text: "Que proposez-vous actuellement ?", type: "short" },
+    { id: "a3", text: "Depuis combien de temps votre activité existe-t-elle ?", type: "single", options: ["Moins de 6 mois", "6 à 12 mois", "1 à 3 ans", "Plus de 3 ans"] },
+    { id: "a4", text: "Parmi ces phrases, laquelle vous ressemble le plus en ce moment ?", type: "single", options: ["J'ai beaucoup d'idées mais pas de plan clair", "Je sais ce que je veux, mais j'ai trop de chantiers ouverts", "J'ai une vision globale mais du mal à prioriser", "Je suis bloqué(e) entre plusieurs directions", "Je veux avancer, mais je ne sais pas quoi lancer d'abord"] },
+    { id: "a5", text: "Ce qui vous fatigue le plus en ce moment…", type: "single", options: ["Penser à trop de choses en même temps", "Ne pas savoir quoi prioriser", "Avoir des idées sans réussir à les concrétiser", "Changer souvent de direction", "Manquer de cadre"] },
+    { id: "a6", text: "Quelles sont les 5 idées ou projets que vous avez actuellement en tête ?", type: "long", hint: "Listez-les librement, sans filtre." },
+    { id: "a7", text: "Parmi ces idées, laquelle vous semble la plus urgente ?", type: "short" },
+    { id: "a8", text: "Laquelle aurait le plus d'impact business si elle fonctionnait ?", type: "short" },
+    { id: "a9", text: "Laquelle serait la plus simple à mettre en place rapidement ?", type: "short" },
+    { id: "a10", text: "Qu'attendez-vous principalement de notre échange ?", type: "multi", options: ["Clarifier mes idées", "Définir une priorité", "Organiser un plan d'action", "Identifier ce qu'il faut construire", "Choisir les bons outils", "Voir s'il faut automatiser", "Voir s'il faut créer une application"] },
+    { id: "a11", text: "Si vous repartiez avec une seule chose utile après notre échange, ce serait quoi ?", type: "long", hint: "Répondez librement, il n'y a pas de mauvaise réponse." },
+  ],
+  B: [
+    { id: "b1", text: "Quelle est votre offre principale aujourd'hui ?", type: "short" },
+    { id: "b2", text: "À qui s'adresse-t-elle précisément ?", type: "short" },
+    { id: "b3", text: "Quel problème résolvez-vous pour vos clients ?", type: "long" },
+    { id: "b4", text: "Êtes-vous capable de résumer votre offre en une phrase ?", type: "single", options: ["Oui", "À peu près", "Non"] },
+    { id: "b5", text: "Aujourd'hui, vous manquez surtout de…", type: "single", options: ["Visibilité", "Prospects", "Demandes qualifiées", "Conversion", "Récurrence", "Clarté dans mon message"] },
+    { id: "b6", text: "Vos clients arrivent principalement par…", type: "single", options: ["Bouche-à-oreille", "Réseaux sociaux", "Prospection directe", "Publicité", "Recommandations", "Je n'ai pas encore de canal régulier"] },
+    { id: "b7", text: "Avez-vous un système clair pour attirer, qualifier, convertir et suivre vos prospects ?", type: "single", options: ["Oui", "Partiellement", "Non"] },
+    { id: "b8", text: "À quel moment perdez-vous le plus de clients potentiels ?", type: "single", options: ["Avant le premier contact", "Au moment de présenter l'offre", "Après la prise de contact", "Après l'envoi d'informations", "Je ne sais pas"] },
+    { id: "b9", text: "Votre problème principal vient plutôt de…", type: "single", options: ["L'offre", "Le positionnement", "La visibilité", "Le manque de système", "Le manque d'outils", "Le suivi des prospects"] },
+    { id: "b10", text: "Qu'attendez-vous de moi sur ce sujet ?", type: "long" },
+  ],
+  C: [
+    { id: "c1", text: "Quel est le but principal de l'application que vous imaginez ?", type: "long" },
+    { id: "c2", text: "Cette application servirait à…", type: "single", options: ["Mes clients", "Mon équipe", "Moi-même", "Plusieurs publics"] },
+    { id: "c3", text: "Le besoin est né de…", type: "single", options: ["Demandes clients", "Friction interne", "Idée personnelle", "Besoin d'organisation", "Opportunité business"] },
+    { id: "c4", text: "Aujourd'hui, votre projet est à quel stade ?", type: "single", options: ["Idée vague", "Idée claire", "Parcours déjà réfléchi", "Fonctionnalités listées", "Prototype imaginé", "Déjà commencé"] },
+    { id: "c5", text: "Le problème principal que l'application doit résoudre est…", type: "long" },
+    { id: "c6", text: "Avez-vous déjà défini les fonctionnalités prioritaires ?", type: "single", options: ["Oui", "Partiellement", "Non"] },
+    { id: "c7", text: "Quelles sont les 3 fonctionnalités indispensables au départ ?", type: "long" },
+    { id: "c8", text: "Craignez-vous de construire quelque chose de trop gros ou mal ciblé ?", type: "single", options: ["Oui", "Un peu", "Non"] },
+    { id: "c9", text: "Pour vous, le succès de ce projet ressemblerait à quoi dans 6 mois ?", type: "long" },
+  ],
+  D: [
+    { id: "d1", text: "Quelle activité gérez-vous aujourd'hui ?", type: "short" },
+    { id: "d2", text: "Quelles tâches reviennent chaque semaine de façon répétitive ?", type: "long" },
+    { id: "d3", text: "Sur quelles tâches perdez-vous le plus de temps ?", type: "multi", options: ["Prise de contact", "Qualification", "Prise de rendez-vous", "Onboarding", "Suivi client", "Relances", "Envoi de documents", "Facturation", "Organisation interne"] },
+    { id: "d4", text: "Quels outils utilisez-vous aujourd'hui ?", type: "long" },
+    { id: "d5", text: "Vos process sont-ils documentés ?", type: "single", options: ["Oui", "Partiellement", "Non, ils sont surtout dans ma tête"] },
+    { id: "d6", text: "Si vous pouviez automatiser 3 choses demain, lesquelles choisiriez-vous ?", type: "long" },
+    { id: "d7", text: "Le but principal de l'automatisation pour vous serait…", type: "single", options: ["Gagner du temps", "Éviter les oublis", "Améliorer l'expérience client", "Centraliser l'information", "Déléguer plus facilement"] },
+  ],
+  E: [
+    { id: "e1", text: "Quelle est votre activité aujourd'hui ?", type: "long" },
+    { id: "e2", text: "Que proposez-vous actuellement ?", type: "short" },
+    { id: "e3", text: "Aujourd'hui, votre plus grand enjeu est plutôt…", type: "single", options: ["Trouver plus de clients", "Clarifier mon offre", "Organiser mon fonctionnement", "Automatiser certaines tâches", "Construire un produit", "Mieux piloter mon activité"] },
+    { id: "e4", text: "Quelles sont les principales idées ou projets que vous avez en tête ?", type: "long" },
+    { id: "e5", text: "Laquelle aurait le plus d'impact si elle était bien mise en place ?", type: "short" },
+    { id: "e6", text: "Qu'attendez-vous concrètement de notre rendez-vous ?", type: "long" },
+  ],
+  F: [
+    { id: "f1", text: "Présentez votre activité en quelques lignes.", type: "long" },
+    { id: "f2", text: "Que vendez-vous aujourd'hui ?", type: "short" },
+    { id: "f3", text: "À qui vendez-vous ?", type: "short" },
+    { id: "f4", text: "Votre offre est-elle stabilisée ?", type: "single", options: ["Oui", "Partiellement", "Non"] },
+    { id: "f5", text: "Aujourd'hui, quel est votre principal frein ?", type: "long" },
+    { id: "f6", text: "Qu'est-ce qui vous fait perdre le plus de temps ?", type: "long" },
+    { id: "f7", text: "Avez-vous aujourd'hui un flux régulier de prospects ?", type: "single", options: ["Oui", "Non", "Irrégulier"] },
+    { id: "f8", text: "Avez-vous un projet de produit, espace ou application ?", type: "single", options: ["Oui", "Non", "En réflexion"] },
+    { id: "f9", text: "Si oui, à quoi doit-il servir ?", type: "long" },
+    { id: "f10", text: "Vos process sont-ils posés ?", type: "single", options: ["Oui", "Partiellement", "Non"] },
+    { id: "f11", text: "Qu'aimeriez-vous voir fonctionner de façon beaucoup plus fluide ?", type: "long" },
+    { id: "f12", text: "Quel résultat vous ferait dire : « c'était exactement ce qu'il me fallait » ?", type: "long" },
+  ],
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+
+let state = {
+  profile: null,
+  qualifyAnswer: null,
+  currentQ: 0,
+  answers: {},
+  questions: [],
+};
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('visible');
+    setTimeout(() => { s.style.display = 'none'; }, 400);
+  });
+  setTimeout(() => {
+    const next = document.getElementById('screen-' + screenId);
+    next.style.display = 'flex';
+    requestAnimationFrame(() => next.classList.add('visible'));
+  }, 150);
+}
+
+// ═══════════════════════════════════════════════
+// ÉCRAN QUALIFICATION
+// ═══════════════════════════════════════════════
+
+function initQualify() {
+  const container = document.getElementById('qualify-options');
+  container.innerHTML = '';
+  QUALIFY_OPTIONS.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.innerHTML = `
+      <span class="option-dot">
+        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+          <path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </span>
+      ${opt.label}
+    `;
+    btn.onclick = () => {
+      container.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.qualifyAnswer = opt.label;
+      state.profile = opt.profile;
+      document.getElementById('qualify-next').disabled = false;
+    };
+    container.appendChild(btn);
+  });
+}
+
+function startQuestionnaire() {
+  state.questions = QUESTIONNAIRES[state.profile] || [];
+  state.currentQ = 0;
+  state.answers = {};
+  renderQuestion();
+  goTo('question');
+}
+
+// ═══════════════════════════════════════════════
+// ÉCRAN QUESTION
+// ═══════════════════════════════════════════════
+
+function renderQuestion() {
+  const q = state.questions[state.currentQ];
+  const total = state.questions.length;
+  const current = state.currentQ + 1;
+
+  // Progress
+  document.getElementById('progress-count').textContent = `${current} / ${total}`;
+  document.getElementById('progress-fill').style.width = `${Math.round((current / total) * 100)}%`;
+
+  // Back
+  document.getElementById('back-btn').disabled = state.currentQ === 0;
+
+  // Texte
+  document.getElementById('question-text').textContent = q.text;
+
+  // Corps
+  const body = document.getElementById('question-body');
+  body.innerHTML = '';
+
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.textContent = state.currentQ === total - 1 ? 'Terminer →' : 'Continuer →';
+  nextBtn.disabled = true;
+
+  const saved = state.answers[q.id];
+
+  if (q.type === 'short' || q.type === 'long') {
+    const el = document.createElement(q.type === 'long' ? 'textarea' : 'input');
+    el.className = q.type === 'long' ? 'textarea-input' : 'text-input';
+    el.placeholder = q.hint || (q.type === 'long' ? 'Répondez librement…' : 'Votre réponse…');
+    if (saved) el.value = saved;
+    el.oninput = () => {
+      state.answers[q.id] = el.value;
+      nextBtn.disabled = el.value.trim().length === 0;
+    };
+    if (saved && saved.trim().length > 0) nextBtn.disabled = false;
+    body.appendChild(el);
+    setTimeout(() => el.focus(), 300);
+  }
+
+  if (q.type === 'single') {
+    q.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'option' + (saved === opt ? ' selected' : '');
+      btn.innerHTML = `
+        <span class="option-dot">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+            <path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        ${opt}
+      `;
+      btn.onclick = () => {
+        body.querySelectorAll('.option').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        state.answers[q.id] = opt;
+        nextBtn.disabled = false;
+      };
+      body.appendChild(btn);
+    });
+    if (saved) nextBtn.disabled = false;
+  }
+
+  if (q.type === 'multi') {
+    const hint = document.createElement('p');
+    hint.className = 'multi-hint';
+    hint.textContent = 'Plusieurs réponses possibles';
+    body.appendChild(hint);
+
+    const current = Array.isArray(saved) ? saved : [];
+
+    q.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'option' + (current.includes(opt) ? ' selected' : '');
+      btn.innerHTML = `
+        <span class="option-dot square">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+            <path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        ${opt}
+      `;
+      btn.onclick = () => {
+        btn.classList.toggle('selected');
+        const selected = Array.from(body.querySelectorAll('.option.selected'))
+          .map(b => b.textContent.trim());
+        state.answers[q.id] = selected;
+        nextBtn.disabled = selected.length === 0;
+      };
+      body.appendChild(btn);
+    });
+    if (current.length > 0) nextBtn.disabled = false;
+  }
+}
+
+function goNext() {
+  if (state.currentQ < state.questions.length - 1) {
+    state.currentQ++;
+    renderQuestion();
+  } else {
+    finishQuestionnaire();
+  }
+}
+
+function goPrev() {
+  if (state.currentQ > 0) {
+    state.currentQ--;
+    renderQuestion();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SYNTHÈSE
+// ═══════════════════════════════════════════════
+
+async function finishQuestionnaire() {
+  goTo('synthesis');
+
+  const profileLabel = PROFILE_LABELS[state.profile] || state.profile;
+  const completedAt = new Date().toISOString();
+
+  const qa = state.questions.map(q => {
+    const a = state.answers[q.id];
+    return `- ${q.text}\n  → ${Array.isArray(a) ? a.join(', ') : (a || '—')}`;
+  }).join('\n\n');
+
+  const prompt = `Tu es Bev, consultante senior en cadrage business et product ops, fondatrice de bev-ops. Tu as reçu les réponses suivantes d'un prospect avant un rendez-vous de cadrage. Le profil identifié est : ${profileLabel}.
+
+Voici les réponses :
+
+${qa}
+
+Rédige une note de synthèse structurée en 4 parties :
+1. **Ce que j'ai compris de votre situation** (2-3 phrases, empathique et précis)
+2. **Ce que j'identifie comme priorité** (1-2 points clés, direct)
+3. **Ce qui nous attend lors de notre rendez-vous** (2-3 phrases, concrètes)
+4. **Un mot de Bev** (1 phrase personnelle, chaleureuse et confiante, à la première personne)
+
+Ton ton : professionnel, précis, chaleureux. Jamais générique. Toujours basé sur ce qui a été dit.
+Longueur totale : 200-280 mots. Réponds directement en markdown, sans intro ni conclusion externe.`;
+
+  let generatedSynthesis = '';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    const data = await res.json();
+    generatedSynthesis = data.content?.map(b => b.text || '').join('') || '';
+  } catch {
+    generatedSynthesis = '_La synthèse n\'a pas pu être générée. Vos réponses ont bien été enregistrées._';
+  }
+
+  // Afficher la synthèse
+  document.getElementById('synth-loading').style.display = 'none';
+  const content = document.getElementById('synth-content');
+  content.style.display = 'block';
+  content.innerHTML = renderMarkdown(generatedSynthesis);
+
+  // Envoyer vers n8n via le proxy Vercel
+  sendToWebhook({ profile: state.profile, profileLabel, completedAt, synthesis: generatedSynthesis, answers: state.answers });
+}
+
+async function sendToWebhook(payload) {
+  const statusEl = document.getElementById('webhook-status');
+  statusEl.innerHTML = `<div class="status-dot"><div class="dot dot--copper"></div><span>Enregistrement en cours…</span></div>`;
+
+  try {
+    await fetch('/api/webhook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    statusEl.innerHTML = `<div class="status-dot"><div class="dot dot--green"></div><span>Enregistré dans Notion</span></div>`;
+  } catch {
+    statusEl.innerHTML = `<div class="status-dot"><div class="dot dot--red"></div><span>Notion non disponible — vos réponses sont affichées ci-dessus.</span></div>`;
+  }
+}
+
+function renderMarkdown(text) {
+  return '<p>' + text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>') + '</p>';
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  initQualify();
+});
+</script>
+</body>
+</html>
