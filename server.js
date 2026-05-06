@@ -18,7 +18,7 @@ app.post('/api/claude', async (req, res) => {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(enrichedBody),
     });
     const data = await response.json();
     res.json(data);
@@ -30,10 +30,13 @@ app.post('/api/claude', async (req, res) => {
 // ── Proxy n8n webhook ─────────────────────────────────────
 app.post('/api/webhook', async (req, res) => {
   try {
+    // Ajouter titre avec prénom
+    const title = `${body.prenom || 'Prospect'} · ${body.profileLabel || ''} · ${new Date().toISOString().split('T')[0]}`;
+    const enrichedBody = { ...body, title };
     await fetch('https://n8n.bev-ops.com/webhook/bev-ops-audit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(enrichedBody),
     });
     res.json({ ok: true });
   } catch (err) {
