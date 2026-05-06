@@ -1,0 +1,15 @@
+{
+  "name": "bev-ops-app",
+  "version": "1.0.0",
+  "description": "bev-ops · Questionnaire audit de cadrage",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
