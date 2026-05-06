@@ -310,7 +310,35 @@
       <div id="qualify-options"></div>
     </div>
     <div style="display:flex;justify-content:flex-end;margin-top:3rem">
-      <button class="btn" id="qualify-next" disabled onclick="startQuestionnaire()">Continuer →</button>
+      <button class="btn" id="qualify-next" disabled onclick="goTo('prenom')">Continuer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     ÉCRAN 2B — PRÉNOM
+════════════════════════════════════════════════ -->
+<div id="screen-prenom" class="screen" style="display:none">
+  <div class="inner">
+    <div class="nav">
+      <span class="label">bev-ops</span>
+      <button class="back-btn" onclick="goTo('qualify')">← Précédent</button>
+    </div>
+    <div style="flex:1">
+      <p style="font-size:0.75rem;color:var(--gray);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem">Avant de commencer</p>
+      <p class="display display--q" style="margin-bottom:2.5rem">
+        Comment puis-je vous appeler ?
+      </p>
+      <input
+        id="prenom-input"
+        type="text"
+        class="text-input"
+        placeholder="Votre prénom…"
+        oninput="document.getElementById('prenom-next').disabled = this.value.trim().length === 0"
+      />
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:3rem">
+      <button class="btn" id="prenom-next" disabled onclick="startQuestionnaire()">Continuer →</button>
     </div>
   </div>
 </div>
@@ -529,6 +557,7 @@ function initQualify() {
 }
 
 function startQuestionnaire() {
+  state.prenom = document.getElementById('prenom-input')?.value?.trim() || '';
   state.questions = QUESTIONNAIRES[state.profile] || [];
   state.currentQ = 0;
   state.answers = {};
@@ -658,6 +687,7 @@ async function finishQuestionnaire() {
   goTo('synthesis');
 
   const profileLabel = PROFILE_LABELS[state.profile] || state.profile;
+  const prenom = state.prenom || 'le prospect';
   const completedAt = new Date().toISOString();
 
   const qa = state.questions.map(q => {
@@ -665,7 +695,7 @@ async function finishQuestionnaire() {
     return `- ${q.text}\n  → ${Array.isArray(a) ? a.join(', ') : (a || '—')}`;
   }).join('\n\n');
 
-  const prompt = `Tu es Bev, consultante senior en cadrage business et product ops, fondatrice de bev-ops. Tu as reçu les réponses suivantes d'un prospect avant un rendez-vous de cadrage. Le profil identifié est : ${profileLabel}.
+  const prompt = `Tu es Bev, consultante senior en cadrage business et product ops, fondatrice de bev-ops. Tu as reçu les réponses suivantes de ${prenom} avant un rendez-vous de cadrage. Le profil identifié est : ${profileLabel}. Adresse-toi à cette personne par son prénom dans la synthèse.
 
 Voici les réponses :
 
@@ -705,7 +735,7 @@ Longueur totale : 200-280 mots. Réponds directement en markdown, sans intro ni 
   content.innerHTML = renderMarkdown(generatedSynthesis);
 
   // Envoyer vers n8n via le proxy Vercel
-  sendToWebhook({ profile: state.profile, profileLabel, completedAt, synthesis: generatedSynthesis, answers: state.answers });
+  sendToWebhook({ prenom: state.prenom, profile: state.profile, profileLabel, completedAt, synthesis: generatedSynthesis, answers: state.answers });
 }
 
 async function sendToWebhook(payload) {
