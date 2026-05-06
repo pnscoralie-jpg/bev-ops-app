@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Proxy Claude ──────────────────────────────────────────
@@ -18,11 +18,12 @@ app.post('/api/claude', async (req, res) => {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify(enrichedBody),
+      body: JSON.stringify(req.body),
     });
     const data = await response.json();
     res.json(data);
   } catch (err) {
+    console.error('Claude error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -30,9 +31,15 @@ app.post('/api/claude', async (req, res) => {
 // ── Proxy n8n webhook ─────────────────────────────────────
 app.post('/api/webhook', async (req, res) => {
   try {
-    // Ajouter titre avec prénom
-    const title = `${body.prenom || 'Prospect'} · ${body.profileLabel || ''} · ${new Date().toISOString().split('T')[0]}`;
-    const enrichedBody = { ...body, title };
+    const body = req.body;
+    const prenom = body.prenom || 'Prospect';
+    const profileLabel = body.profileLabel || '';
+    const date = new Date().toISOString().split('T')[0];
+    const enrichedBody = {
+      ...body,
+      title: `${prenom} · ${profileLabel} · ${date}`,
+    };
+
     await fetch('https://n8n.bev-ops.com/webhook/bev-ops-audit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -40,6 +47,7 @@ app.post('/api/webhook', async (req, res) => {
     });
     res.json({ ok: true });
   } catch (err) {
+    console.error('Webhook error:', err);
     res.status(500).json({ ok: false, error: err.message });
   }
 });
