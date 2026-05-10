@@ -40,7 +40,7 @@ app.post('/api/webhook', async (req, res) => {
       title: `${prenom} · ${profileLabel} · ${date}`,
     };
 
-    await fetch('https://n8n.bev-ops.com/webhook-test/bev-ops-audit', {
+    await fetch('https://n8n.bev-ops.com/webhook/bev-ops-audit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(enrichedBody),
