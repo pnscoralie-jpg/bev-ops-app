@@ -290,7 +290,7 @@
     </div>
     <button class="btn btn--start" onclick="goTo('qualify')">Commencer</button>
   </div>
-  <div class="footer">bev-ops.com</div>
+  <div class="footer">bev-ops.fr</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════
@@ -396,7 +396,7 @@
       <p class="display" style="font-size:1.1rem;color:var(--ivory);font-style:italic">
         À très bientôt lors de notre rendez-vous.
       </p>
-      <p style="font-size:0.75rem;color:var(--gray);letter-spacing:0.1em">— Bev · bev-ops.com</p>
+      <p style="font-size:0.75rem;color:var(--gray);letter-spacing:0.1em">— Bev · bev-ops.fr</p>
     </div>
   </div>
 </div>
@@ -695,7 +695,8 @@ async function finishQuestionnaire() {
     return `- ${q.text}\n  → ${Array.isArray(a) ? a.join(', ') : (a || '—')}`;
   }).join('\n\n');
 
-  const prompt = `Tu es Bev, consultante senior en cadrage business et product ops, fondatrice de bev-ops. Tu as reçu les réponses suivantes de ${prenom} avant un rendez-vous de cadrage. Le profil identifié est : ${profileLabel}. Adresse-toi à cette personne par son prénom dans la synthèse.
+  // ── Prompt 1 : synthèse pour le prospect (inchangée) ──────────
+  const promptSynthese = `Tu es Bev, consultante senior en cadrage business et product ops, fondatrice de bev-ops. Tu as reçu les réponses suivantes de ${prenom} avant un rendez-vous de cadrage. Le profil identifié est : ${profileLabel}. Adresse-toi à cette personne par son prénom dans la synthèse.
 
 Voici les réponses :
 
@@ -710,8 +711,45 @@ Rédige une note de synthèse structurée en 4 parties :
 Ton ton : professionnel, précis, chaleureux. Jamais générique. Toujours basé sur ce qui a été dit.
 Longueur totale : 200-280 mots. Réponds directement en markdown, sans intro ni conclusion externe.`;
 
+  // ── Prompt 2 : note de cadrage provisoire pour Notion ─────────
+  const promptNote = `Tu es Bev, consultante senior en cadrage business et product ops, fondatrice de bev-ops.
+
+Tu as reçu les réponses de ${prenom} (profil : ${profileLabel}) à un questionnaire pré-audit.
+
+Voici les réponses :
+
+${qa}
+
+Rédige une note de cadrage provisoire structurée, marquée clairement comme hypothèse à valider en entretien.
+
+### 1. Contexte
+- Activité :
+- Ancienneté :
+- Type de structure :
+- Déclencheur du projet :
+
+### 2. Enjeux identifiés
+Liste les 2-3 enjeux principaux détectés.
+
+### 3. Freins détectés
+Liste les freins concrets exprimés.
+
+### 4. Hypothèse de solution
+En une phrase : quelle direction semble la plus pertinente à ce stade ?
+
+### 5. Questions à approfondir en entretien
+Liste 3-5 questions précises à creuser lors du rendez-vous.
+
+### 6. Prochaines étapes suggérées
+- Étape 1 :
+- Étape 2 :
+- Étape 3 :
+
+Règles : tout basé sur ce qui a été dit, jamais inventé. Ton sobre et professionnel. Markdown direct, sans introduction.`;
+
   let generatedSynthesis = '';
 
+  // Appel 1 — synthèse prospect
   try {
     const res = await fetch('/api/claude', {
       method: 'POST',
@@ -719,7 +757,7 @@ Longueur totale : 200-280 mots. Réponds directement en markdown, sans intro ni 
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: promptSynthese }],
       }),
     });
     const data = await res.json();
@@ -728,6 +766,21 @@ Longueur totale : 200-280 mots. Réponds directement en markdown, sans intro ni 
     generatedSynthesis = '_La synthèse n\'a pas pu être générée. Vos réponses ont bien été enregistrées._';
   }
 
+  // Appel 2 — note de cadrage (en arrière-plan, non bloquant)
+  fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: promptNote }],
+    }),
+  }).then(r => r.json()).then(data => {
+    state.noteCadrage = data.content?.map(b => b.text || '').join('') || '';
+  }).catch(() => {
+    state.noteCadrage = '';
+  });
+
   // Afficher la synthèse
   document.getElementById('synth-loading').style.display = 'none';
   const content = document.getElementById('synth-content');
@@ -735,7 +788,7 @@ Longueur totale : 200-280 mots. Réponds directement en markdown, sans intro ni 
   content.innerHTML = renderMarkdown(generatedSynthesis);
 
   // Envoyer vers n8n via le proxy Vercel
-  sendToWebhook({ prenom: state.prenom, profile: state.profile, profileLabel, completedAt, synthesis: generatedSynthesis, answers: state.answers });
+  sendToWebhook({ prenom: state.prenom, profile: state.profile, profileLabel, completedAt, synthesis: generatedSynthesis, noteCadrage: state.noteCadrage || '', answers: state.answers });
 }
 
 async function sendToWebhook(payload) {
