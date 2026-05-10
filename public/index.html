@@ -766,20 +766,22 @@ Règles : tout basé sur ce qui a été dit, jamais inventé. Ton sobre et profe
     generatedSynthesis = '_La synthèse n\'a pas pu être générée. Vos réponses ont bien été enregistrées._';
   }
 
-  // Appel 2 — note de cadrage (en arrière-plan, non bloquant)
-  fetch('/api/claude', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: promptNote }],
-    }),
-  }).then(r => r.json()).then(data => {
-    state.noteCadrage = data.content?.map(b => b.text || '').join('') || '';
-  }).catch(() => {
+  // Appel 2 — note de cadrage (attendu avant envoi webhook)
+  try {
+    const res2 = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: promptNote }],
+      }),
+    });
+    const data2 = await res2.json();
+    state.noteCadrage = data2.content?.map(b => b.text || '').join('') || '';
+  } catch {
     state.noteCadrage = '';
-  });
+  }
 
   // Afficher la synthèse
   document.getElementById('synth-loading').style.display = 'none';
